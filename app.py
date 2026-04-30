@@ -249,7 +249,7 @@ st.markdown("""
 # ─────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <h1>📈 Stock Price Predictor</h1>
+    <h1>·&nbsp Stock Price Predictor</h1>
     <p>· Live market data &nbsp;·&nbsp; LSTM Neural Network &nbsp;·&nbsp; 30-day outlook</p>
 </div>
 """, unsafe_allow_html=True)
@@ -566,7 +566,7 @@ if st.session_state.get('active_pred'):
     top_c1, top_c2 = st.columns([1.5, 1])
     
     with top_c1:
-        st.markdown("<div class='section-head'>🔮 30-Day Outlook</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-head'> 30-Day Outlook</div>", unsafe_allow_html=True)
         st.write("")
         if future_prices[-1] > curr:
             st.success(
@@ -587,13 +587,13 @@ if st.session_state.get('active_pred'):
                    f"{((fifty2_high - curr) / curr) * 100:+.2f}% vs now")
         if mkt_cap:
             if mkt_cap >= 1_000_000_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000_000_000:.2f}T"
+                mkt_str = f"{currency} {mkt_cap / 1_000_000_000_000:.2f}LCr"
             elif mkt_cap >= 1_000_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000_000:.2f}B"
+                mkt_str = f"{currency} {mkt_cap / 1_000_000_000:.2f}LCr"
             elif mkt_cap >= 1_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000:.2f}M"
+                mkt_str = f"{currency} {mkt_cap / 1_000_000:.2f}LCr"
             else:
-                mkt_str = f"{currency} {mkt_cap:,.0f}"
+                mkt_str = f"{currency} {mkt_cap:,.0f}LCr"
         else:
             mkt_str = "N/A"
         kc2.metric("Mkt Cap", mkt_str)
@@ -606,7 +606,7 @@ if st.session_state.get('active_pred'):
         st.markdown("<div class='section-head'>📊 Historical Price Movement</div>", unsafe_allow_html=True)
     with hist_col2:
         st.write("")
-        show_candles = st.checkbox("🕯️ Show Pro Candlesticks", value=False)
+        show_candles = st.checkbox(" Show Pro Candlesticks", value=False)
 
     fig1 = go.Figure()
 
@@ -643,7 +643,7 @@ if st.session_state.get('active_pred'):
     st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False, "responsive": True})
 
     # ── Forecast Chart ─────────────────────────
-    st.markdown("<div class='section-head'>🔮 30-Day Forecast Prediction</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'> 30-Day Forecast Prediction</div>", unsafe_allow_html=True)
 
     fig2      = go.Figure()
     hist_x    = dates[-60:]
@@ -692,7 +692,7 @@ if st.session_state.get('active_pred'):
     st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False, "responsive": True})
 
     # ── Forecast Table ─────────────────────────
-    st.markdown("<div class='section-head'>📅 Predicted Prices — Next 30 Days</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'> Predicted Prices — Next 30 Days</div>", unsafe_allow_html=True)
 
     pred_df = pd.DataFrame({
         "Date": future_dates.strftime("%Y-%m-%d"),
@@ -721,7 +721,7 @@ if st.session_state.get('active_pred'):
     )
 
     # ── Lumpsum & SIP Calculator ────────────────
-    st.markdown("<div class='section-head'>💰 Long-Term Returns Calculator</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'> Long-Term Returns Calculator</div>", unsafe_allow_html=True)
     st.markdown("Calculate potential long-term returns for this asset based on the 30-day forecasted trend.")
 
     calc_type = st.radio("Investment Mode", ["Lumpsum", "SIP (Monthly)"], horizontal=True)
@@ -784,21 +784,21 @@ if st.session_state.get('active_pred'):
     
     if est_returns > 0:
         st.success(
-            f"### PROFIT! 🚀\n"
+            f"### PROFIT! \n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years** "
             f"at an expected rate of **{expected_return}%**, your money is projected to grow to **{currency} {total_value:,.2f}**.\n\n"
             f"**Total Profit Earned:** {currency} {est_returns:,.2f}"
         )
     elif est_returns < 0:
         st.error(
-            f"### LOSS! ⚠️\n"
+            f"### LOSS! \n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years** "
             f"at an expected rate of **{expected_return}%**, your money is projected to shrink to **{currency} {total_value:,.2f}**.\n\n"
             f"**Total Loss Incurred:** {currency} {abs(est_returns):,.2f}"
         )
     else:
         st.info(
-            f"### BREAK EVEN ⚖️\n"
+            f"### BREAK EVEN \n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years**, "
             f"your money will not grow or shrink.\n\n"
             f"**Final Value:** {currency} {total_value:,.2f}"
