@@ -249,8 +249,8 @@ st.markdown("""
 # ─────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <h1>·&nbsp Stock Price Predictor</h1>
-    <p>· Live market data &nbsp;·&nbsp; 30-day outlook</p>
+    <h1>📈 Stock Price Predictor</h1>
+    <p>· Live market data &nbsp;·&nbsp; LSTM Neural Network &nbsp;·&nbsp; 30-day outlook</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -383,10 +383,17 @@ def get_symbol_from_name(query, market_type):
 def fetch_stock_data(ticker, period):
     try:
         stock = yf.Ticker(ticker)
-        df = stock.history(period=period)
-        return df
-    except Exception:
-        return pd.DataFrame()
+        df = stock.history(period=period, auto_adjust=True)
+        if df is None or df.empty:
+            df = yf.download(ticker, period=period, auto_adjust=True, progress=False)
+        if df is None or df.empty:
+            return pd.DataFrame(), "No data returned. Check the ticker symbol."
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        df = df[~df.index.duplicated(keep="last")]
+        return df, None
+    except Exception as e:
+        return pd.DataFrame(), str(e)
 
 
 # ─────────────────────────────────────────────
@@ -472,18 +479,24 @@ if st.session_state.get('active_pred'):
 
     with st.spinner("Resolving symbol and fetching live market data…"):
         fetch_ticker = get_symbol_from_name(p_user_input, p_market)
-        df = fetch_stock_data(fetch_ticker, p_period)
+        df, fetch_err = fetch_stock_data(fetch_ticker, p_period)
 
     if df is None or df.empty or "Close" not in df.columns:
-        st.error(
-            f"Could not retrieve valid historical data for **{p_user_input}** (Resolved Ticker: `{fetch_ticker}`). "
-            "Please check the spelling or ensure the market selection is correct."
+        msg = (
+            f"Could not retrieve data for **{p_user_input}** (resolved ticker: `{fetch_ticker}`).\n\n"
         )
+        if fetch_err:
+            msg += f"**Error:** `{fetch_err}`\n\n"
+        msg += "Suggestions: double-check the ticker symbol, try selecting the correct market, or try again in a moment."
+        st.error(msg)
         st.session_state['active_pred'] = False
         st.stop()
 
     close = df["Close"].dropna().values.flatten().astype(float)
     dates = df.index[: len(close)]
+    # Normalise timezone — newer yfinance returns tz-aware index
+    if hasattr(dates, "tz") and dates.tz is not None:
+        dates = dates.tz_localize(None)
 
     if len(close) < 10:
         st.error(f"Not enough historical data to train the model for `{fetch_ticker}`. Try a longer timeline.")
@@ -495,18 +508,28 @@ if st.session_state.get('active_pred'):
     else:                                                currency = ""
 
     # Fetch 52-week data points
-    fifty2_low = close.min()
-    fifty2_high = close.max()
+    fifty2_low  = float(close.min())
+    fifty2_high = float(close.max())
     mkt_cap = None
+    name = p_user_input.upper()
     try:
-        info     = yf.Ticker(fetch_ticker).info
-        name     = info.get("longName") or info.get("shortName") or p_user_input.upper()
-        currency = info.get("currency", currency)
-        fifty2_low  = info.get("fiftyTwoWeekLow",  fifty2_low)
-        fifty2_high = info.get("fiftyTwoWeekHigh", fifty2_high)
-        mkt_cap     = info.get("marketCap", None)
+        tk   = yf.Ticker(fetch_ticker)
+        # fast_info is reliable in newer yfinance versions
+        fi   = tk.fast_info
+        currency    = getattr(fi, "currency", currency) or currency
+        fifty2_low  = getattr(fi, "fifty_two_week_low",  fifty2_low)  or fifty2_low
+        fifty2_high = getattr(fi, "fifty_two_week_high", fifty2_high) or fifty2_high
+        mkt_cap     = getattr(fi, "market_cap", None)
+        # Try full info for the display name
+        try:
+            info = tk.info
+            name = info.get("longName") or info.get("shortName") or name
+            if not mkt_cap:
+                mkt_cap = info.get("marketCap", None)
+        except Exception:
+            pass
     except Exception:
-        name = p_user_input.upper()
+        pass
 
     with st.spinner("Training LSTM model on historical data…"):
         future_prices = train_and_predict(tuple(close))
@@ -543,7 +566,7 @@ if st.session_state.get('active_pred'):
     top_c1, top_c2 = st.columns([1.5, 1])
     
     with top_c1:
-        st.markdown("<div class='section-head'> 30-Day Outlook</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-head'>🔮 30-Day Outlook</div>", unsafe_allow_html=True)
         st.write("")
         if future_prices[-1] > curr:
             st.success(
@@ -557,18 +580,18 @@ if st.session_state.get('active_pred'):
             )
             
     with top_c2:
-        st.markdown("<div class='section-head'> Key Stats</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-head'>📌 Key Stats</div>", unsafe_allow_html=True)
         st.write("")
         kc1, kc2 = st.columns(2)
         kc1.metric("52-Week High", f"{currency} {fifty2_high:,.2f}",
                    f"{((fifty2_high - curr) / curr) * 100:+.2f}% vs now")
         if mkt_cap:
             if mkt_cap >= 1_000_000_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000_000_000:.2f}LCr"
+                mkt_str = f"{currency} {mkt_cap / 1_000_000_000_000:.2f}T"
             elif mkt_cap >= 1_000_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000_000:.2f}LCr"
+                mkt_str = f"{currency} {mkt_cap / 1_000_000_000:.2f}B"
             elif mkt_cap >= 1_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000:.2f}LCr"
+                mkt_str = f"{currency} {mkt_cap / 1_000_000:.2f}M"
             else:
                 mkt_str = f"{currency} {mkt_cap:,.0f}"
         else:
@@ -580,10 +603,10 @@ if st.session_state.get('active_pred'):
     # ── Historical Chart & Candlestick Toggle ─────────
     hist_col1, hist_col2 = st.columns([3, 1])
     with hist_col1:
-        st.markdown("<div class='section-head'> Historical Price Movement</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-head'>📊 Historical Price Movement</div>", unsafe_allow_html=True)
     with hist_col2:
         st.write("")
-        show_candles = st.checkbox(" Show Pro Candlesticks", value=False)
+        show_candles = st.checkbox("🕯️ Show Pro Candlesticks", value=False)
 
     fig1 = go.Figure()
 
@@ -620,7 +643,7 @@ if st.session_state.get('active_pred'):
     st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False, "responsive": True})
 
     # ── Forecast Chart ─────────────────────────
-    st.markdown("<div class='section-head'> 30-Day Forecast Prediction</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'>🔮 30-Day Forecast Prediction</div>", unsafe_allow_html=True)
 
     fig2      = go.Figure()
     hist_x    = dates[-60:]
@@ -669,7 +692,7 @@ if st.session_state.get('active_pred'):
     st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False, "responsive": True})
 
     # ── Forecast Table ─────────────────────────
-    st.markdown("<div class='section-head'> Predicted Prices — Next 30 Days</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'>📅 Predicted Prices — Next 30 Days</div>", unsafe_allow_html=True)
 
     pred_df = pd.DataFrame({
         "Date": future_dates.strftime("%Y-%m-%d"),
@@ -698,7 +721,7 @@ if st.session_state.get('active_pred'):
     )
 
     # ── Lumpsum & SIP Calculator ────────────────
-    st.markdown("<div class='section-head'> Long-Term Returns Calculator</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'>💰 Long-Term Returns Calculator</div>", unsafe_allow_html=True)
     st.markdown("Calculate potential long-term returns for this asset based on the 30-day forecasted trend.")
 
     calc_type = st.radio("Investment Mode", ["Lumpsum", "SIP (Monthly)"], horizontal=True)
@@ -717,7 +740,7 @@ if st.session_state.get('active_pred'):
 
     # Annualize the model's 30-day forecast using CAGR: (1 + r_30d)^(365/30) - 1
     expected_return = round(((1 + trend / 100) ** (365 / 30) - 1) * 100, 2)
-    return_icon = "" if expected_return >= 0 else ""
+    return_icon = "📈" if expected_return >= 0 else "📉"
     if expected_return >= 0:
         st.success(
             f"{return_icon} **Model-Predicted Annual Return: {expected_return:+.2f}%** — "
@@ -761,21 +784,21 @@ if st.session_state.get('active_pred'):
     
     if est_returns > 0:
         st.success(
-            f"### PROFIT! \n"
+            f"### PROFIT! 🚀\n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years** "
             f"at an expected rate of **{expected_return}%**, your money is projected to grow to **{currency} {total_value:,.2f}**.\n\n"
             f"**Total Profit Earned:** {currency} {est_returns:,.2f}"
         )
     elif est_returns < 0:
         st.error(
-            f"### LOSS! \n"
+            f"### LOSS! ⚠️\n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years** "
             f"at an expected rate of **{expected_return}%**, your money is projected to shrink to **{currency} {total_value:,.2f}**.\n\n"
             f"**Total Loss Incurred:** {currency} {abs(est_returns):,.2f}"
         )
     else:
         st.info(
-            f"### BREAK EVEN \n"
+            f"### BREAK EVEN ⚖️\n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years**, "
             f"your money will not grow or shrink.\n\n"
             f"**Final Value:** {currency} {total_value:,.2f}"
