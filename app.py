@@ -250,7 +250,7 @@ st.markdown("""
 st.markdown("""
 <div class="hero">
     <h1>·&nbsp Stock Price Predictor</h1>
-    <p>· Live market data &nbsp;·&nbsp; LSTM Neural Network &nbsp;·&nbsp; 30-day outlook</p>
+    <p>· Live market data &nbsp;·&nbsp; 30-day outlook</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -580,7 +580,7 @@ if st.session_state.get('active_pred'):
             )
             
     with top_c2:
-        st.markdown("<div class='section-head'>📌 Key Stats</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-head'> Key Stats</div>", unsafe_allow_html=True)
         st.write("")
         kc1, kc2 = st.columns(2)
         kc1.metric("52-Week High", f"{currency} {fifty2_high:,.2f}",
@@ -603,7 +603,7 @@ if st.session_state.get('active_pred'):
     # ── Historical Chart & Candlestick Toggle ─────────
     hist_col1, hist_col2 = st.columns([3, 1])
     with hist_col1:
-        st.markdown("<div class='section-head'>📊 Historical Price Movement</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-head'> Historical Price Movement</div>", unsafe_allow_html=True)
     with hist_col2:
         st.write("")
         show_candles = st.checkbox(" Show Pro Candlesticks", value=False)
@@ -713,7 +713,7 @@ if st.session_state.get('active_pred'):
 
     csv = pred_df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        label="📥 Download Forecast as CSV",
+        label=" Download Forecast as CSV",
         data=csv,
         file_name=f"{fetch_ticker}_forecast.csv",
         mime="text/csv",
@@ -748,7 +748,7 @@ if st.session_state.get('active_pred'):
         )
     else:
         st.error(
-            f"{return_icon} **Model-Predicted Annual Return: {expected_return:+.2f}%** — "
+            f"{return_icon} **Predicted Annual Return: {expected_return:+.2f}%** — "
             f"Annualized from the 30-day forecast ({trend:+.2f}% in 30 days)"
         )
 
