@@ -249,7 +249,7 @@ st.markdown("""
 # ─────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <h1>    ·&nbsp;Stock Price Predictor</h1>
+    <h1>·&nbsp Stock Price Predictor</h1>
     <p>· Live market data &nbsp;·&nbsp; 30-day outlook</p>
 </div>
 """, unsafe_allow_html=True)
@@ -580,10 +580,10 @@ if st.session_state.get('active_pred'):
     # ── Historical Chart & Candlestick Toggle ─────────
     hist_col1, hist_col2 = st.columns([3, 1])
     with hist_col1:
-        st.markdown("<div class='section-head'>Historical Price Movement</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-head'> Historical Price Movement</div>", unsafe_allow_html=True)
     with hist_col2:
         st.write("")
-        show_candles = st.checkbox("🕯️ Show Pro Candlesticks", value=False)
+        show_candles = st.checkbox(" Show Pro Candlesticks", value=False)
 
     fig1 = go.Figure()
 
@@ -620,7 +620,7 @@ if st.session_state.get('active_pred'):
     st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False, "responsive": True})
 
     # ── Forecast Chart ─────────────────────────
-    st.markdown("<div class='section-head'>30-Day Forecast Prediction</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'> 30-Day Forecast Prediction</div>", unsafe_allow_html=True)
 
     fig2      = go.Figure()
     hist_x    = dates[-60:]
@@ -669,7 +669,7 @@ if st.session_state.get('active_pred'):
     st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False, "responsive": True})
 
     # ── Forecast Table ─────────────────────────
-    st.markdown("<div class='section-head'>Predicted Prices — Next 30 Days</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'> Predicted Prices — Next 30 Days</div>", unsafe_allow_html=True)
 
     pred_df = pd.DataFrame({
         "Date": future_dates.strftime("%Y-%m-%d"),
@@ -720,7 +720,7 @@ if st.session_state.get('active_pred'):
     return_icon = "" if expected_return >= 0 else ""
     if expected_return >= 0:
         st.success(
-            f"{return_icon} **Predicted Annual Return: {expected_return:+.2f}%** — "
+            f"{return_icon} **Model-Predicted Annual Return: {expected_return:+.2f}%** — "
             f"Annualized from the 30-day forecast ({trend:+.2f}% in 30 days)"
         )
     else:
