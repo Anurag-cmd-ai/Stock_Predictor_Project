@@ -589,9 +589,9 @@ if st.session_state.get('active_pred'):
             if mkt_cap >= 1_000_000_000_000:
                 mkt_str = f"{currency} {mkt_cap / 1_000_000_000_000:.2f}LCr"
             elif mkt_cap >= 1_000_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000_000:.2f}LCr"
+                mkt_str = f"{currency} {mkt_cap / 1_000_000_000:.2f}KCr"
             elif mkt_cap >= 1_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000:.2f}LCr"
+                mkt_str = f"{currency} {mkt_cap / 1_000_000:.2f}Cr"
             else:
                 mkt_str = f"{currency} {mkt_cap:,.0f}LCr"
         else:
