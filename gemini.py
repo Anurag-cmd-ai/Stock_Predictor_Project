@@ -84,7 +84,7 @@ st.markdown("""
         border-color: rgba(251,191,36,0.50) !important;
         box-shadow: 0 0 0 3px rgba(251,191,36,0.10) !important;
     }
-    label, .stSelectbox label, [data-testid="stWidgetLabel"], [data-testid="stRadio"] label, [data-testid="stCheckbox"] label {
+    label, .stSelectbox label, [data-testid="stWidgetLabel"], [data-testid="stRadio"] label {
         color: #cbd5e1 !important;
         font-weight: 600 !important;
         font-size: 0.85rem !important;
@@ -137,23 +137,22 @@ st.markdown("""
         text-transform: uppercase !important;
     }
 
-    /* Metric VALUE — force pure bright white */
-    [data-testid="stMetricValue"],
-    [data-testid="stMetricValue"] *,
-    [data-testid="stMetricValue"] > div,
-    [data-testid="stMetricValue"] div,
-    [data-testid="stMetricValue"] label,
-    [data-testid="stMetricValue"] span,
-    [data-testid="stMetricValue"] p {
+    /* Metric VALUE — MAXIMUM brightness */
+    div[data-testid="metric-container"] [data-testid="stMetricValue"],
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] > div,
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] div,
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] span,
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] p,
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] * {
         color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-        opacity: 1 !important;
-        font-size: 1.95rem !important;
+        font-size: 1.80rem !important;
         font-weight: 800 !important;
         font-family: 'Space Mono', monospace !important;
         letter-spacing: -0.01em !important;
-        text-shadow: none !important;
-        filter: none !important;
+        text-shadow: 0 0 8px rgba(255,255,255,1.00), 0 0 20px rgba(255,255,255,0.80), 0 0 40px rgba(200,220,255,0.60), 0 2px 4px rgba(0,0,0,0.80) !important;
+        -webkit-text-fill-color: #ffffff !important;
+        opacity: 1 !important;
+        filter: brightness(1.4) !important;
     }
 
     /* Metric DELTA */
@@ -163,14 +162,12 @@ st.markdown("""
     div[data-testid="metric-container"] [data-testid="stMetricDelta"],
     div[data-testid="metric-container"] [data-testid="stMetricDelta"] > div,
     div[data-testid="metric-container"] [data-testid="stMetricDelta"] * {
-        font-size: 0.85rem !important;
-        font-weight: 700 !important;
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
         letter-spacing: 0.02em !important;
-        color: #6ee7b7 !important;
-        -webkit-text-fill-color: #6ee7b7 !important;
+        color: #fbbf24 !important;
+        -webkit-text-fill-color: #fbbf24 !important;
         opacity: 1 !important;
-        text-shadow: 0 0 8px rgba(110,231,183,0.70), 0 0 18px rgba(52,211,153,0.45) !important;
-        filter: brightness(1.2) !important;
     }
 
     /* ── Ticker heading ── */
@@ -249,8 +246,8 @@ st.markdown("""
 # ─────────────────────────────────────────────
 st.markdown("""
 <div class="hero">
-    <h1>·&nbsp Stock Price Predictor</h1>
-    <p>· Live market data &nbsp;·&nbsp; 30-day outlook</p>
+    <h1>📈 Stock Price Predictor</h1>
+    <p>· Live market data &nbsp;·&nbsp; LSTM Neural Network &nbsp;·&nbsp; 30-day outlook</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -494,17 +491,10 @@ if st.session_state.get('active_pred'):
     elif "UK" in p_market:                               currency = "GBP"
     else:                                                currency = ""
 
-    # Fetch 52-week data points
-    fifty2_low = close.min()
-    fifty2_high = close.max()
-    mkt_cap = None
     try:
         info     = yf.Ticker(fetch_ticker).info
         name     = info.get("longName") or info.get("shortName") or p_user_input.upper()
         currency = info.get("currency", currency)
-        fifty2_low  = info.get("fiftyTwoWeekLow",  fifty2_low)
-        fifty2_high = info.get("fiftyTwoWeekHigh", fifty2_high)
-        mkt_cap     = info.get("marketCap", None)
     except Exception:
         name = p_user_input.upper()
 
@@ -517,10 +507,11 @@ if st.session_state.get('active_pred'):
     curr        = close[-1]
     chg         = ((close[-1] - close[-2]) / close[-2]) * 100 if len(close) > 1 else 0
     trend       = ((future_prices[-1] - curr) / curr) * 100
-    week_close  = close[-5:] if len(close) >= 5 else close
+    week_close  = close[-5:]  if len(close) >= 5  else close
+    month_close = close[-21:] if len(close) >= 21 else close
     week_high   = week_close.max()
-    day_high    = float(df["High"].iloc[-1])  if "High" in df.columns else curr
-    day_low     = float(df["Low"].iloc[-1])   if "Low"  in df.columns else curr
+    week_low    = week_close.min()
+    month_high  = month_close.max()
 
     # ── Heading ────────────────────────────────
     st.markdown(
@@ -532,95 +523,47 @@ if st.session_state.get('active_pred'):
 
     # ── Metric cards ───────────────────────────
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Current Price", f"{currency} {curr:,.2f}",      f"{chg:+.2f}% today")
-    m2.metric("High",          f"{currency} {day_high:,.2f}",  f"{((day_high - curr) / curr) * 100:+.2f}% vs now")
-    m3.metric("Low",           f"{currency} {day_low:,.2f}",   f"{((day_low  - curr) / curr) * 100:+.2f}% vs now")
-    m4.metric("Week High",     f"{currency} {week_high:,.2f}", f"{((week_high - curr) / curr) * 100:+.2f}% vs now")
+    m1.metric("Current Price",  f"{currency} {curr:,.2f}",       f"{chg:+.2f}% today")
+    m2.metric("Week High",      f"{currency} {week_high:,.2f}",  f"{((week_high - curr) / curr) * 100:+.2f}% vs now")
+    m3.metric("Week Low",       f"{currency} {week_low:,.2f}",   f"{((week_low  - curr) / curr) * 100:+.2f}% vs now")
+    m4.metric("Month High",     f"{currency} {month_high:,.2f}", f"{((month_high - curr) / curr) * 100:+.2f}% vs now")
 
     st.write("")
 
-    # ── Forecast Alert & Gauge Row ──────────────────
-    top_c1, top_c2 = st.columns([1.5, 1])
-    
-    with top_c1:
-        st.markdown("<div class='section-head'> 30-Day Outlook</div>", unsafe_allow_html=True)
-        st.write("")
-        if future_prices[-1] > curr:
-            st.success(
-                f"**▲ Expected to GO UP** · {trend:+.2f}% over 30 days · "
-                f"Target: {currency} {future_prices[-1]:,.2f}"
-            )
-        else:
-            st.error(
-                f"**▼ Expected to FALL DOWN** · {trend:+.2f}% over 30 days · "
-                f"Target: {currency} {future_prices[-1]:,.2f}"
-            )
-            
-    with top_c2:
-        st.markdown("<div class='section-head'> Key Stats</div>", unsafe_allow_html=True)
-        st.write("")
-        kc1, kc2 = st.columns(2)
-        kc1.metric("52-Week High", f"{currency} {fifty2_high:,.2f}",
-                   f"{((fifty2_high - curr) / curr) * 100:+.2f}% vs now")
-        if mkt_cap:
-            if mkt_cap >= 1_000_000_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000_000_000:.2f}T"
-            elif mkt_cap >= 1_000_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000_000:.2f}B"
-            elif mkt_cap >= 1_000_000:
-                mkt_str = f"{currency} {mkt_cap / 1_000_000:.2f}M"
-            else:
-                mkt_str = f"{currency} {mkt_cap:,.0f}"
-        else:
-            mkt_str = "N/A"
-        kc2.metric("Mkt Cap", mkt_str)
+    # ── Forecast alert ─────────────────────────
+    if future_prices[-1] > curr:
+        st.success(
+            f"**▲ Expected to GO UP** · {trend:+.2f}% over 30 days · "
+            f"Target: {currency} {future_prices[-1]:,.2f}"
+        )
+    else:
+        st.error(
+            f"**▼ Expected to FALL DOWN** · {trend:+.2f}% over 30 days · "
+            f"Target: {currency} {future_prices[-1]:,.2f}"
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Historical Chart & Candlestick Toggle ─────────
-    hist_col1, hist_col2 = st.columns([3, 1])
-    with hist_col1:
-        st.markdown("<div class='section-head'> Historical Price Movement</div>", unsafe_allow_html=True)
-    with hist_col2:
-        st.write("")
-        show_candles = st.checkbox(" Show Pro Candlesticks", value=False)
+    # ── Historical Chart ───────────────────────
+    st.markdown("<div class='section-head'>📊 Historical Price Movement</div>", unsafe_allow_html=True)
 
     fig1 = go.Figure()
-
-    if show_candles and all(col in df.columns for col in ["Open", "High", "Low"]):
-        # Render the Pro Candlestick view
-        fig1.add_trace(go.Candlestick(
-            x=dates,
-            open=df["Open"],
-            high=df["High"],
-            low=df["Low"],
-            close=df["Close"],
-            name="Candlestick",
-            increasing_line_color='#22c55e', decreasing_line_color='#ef4444'
-        ))
-        layout1 = {**CHART_LAYOUT}
-        layout1["xaxis"]["rangeslider"] = dict(visible=False) # Plotly shows rangeslider by default for candles, turn it off to match layout
-        layout1["yaxis"] = {**layout1["yaxis"], "title": dict(text=f"Price ({currency})", font=dict(color="#64748b", size=11))}
-        fig1.update_layout(**layout1)
-    else:
-        # Render the standard line view
-        fig1.add_trace(go.Scatter(
-            x=dates, y=close,
-            mode="lines",
-            name="Close Price",
-            line=dict(color="#3b82f6", width=2.5),
-            fill="tozeroy",
-            fillcolor="rgba(59,130,246,0.08)",
-            hovertemplate="<b>%{x|%d %b %Y}</b><br>Price: " + currency + " %{y:,.2f}<extra></extra>",
-        ))
-        layout1 = {**CHART_LAYOUT}
-        layout1["yaxis"] = {**layout1["yaxis"], "title": dict(text=f"Price ({currency})", font=dict(color="#64748b", size=11))}
-        fig1.update_layout(**layout1)
-
+    fig1.add_trace(go.Scatter(
+        x=dates, y=close,
+        mode="lines",
+        name="Close Price",
+        line=dict(color="#3b82f6", width=2.5),
+        fill="tozeroy",
+        fillcolor="rgba(59,130,246,0.08)",
+        hovertemplate="<b>%{x|%d %b %Y}</b><br>Price: " + currency + " %{y:,.2f}<extra></extra>",
+    ))
+    layout1 = {**CHART_LAYOUT}
+    layout1["yaxis"] = {**layout1["yaxis"], "title": dict(text=f"Price ({currency})", font=dict(color="#64748b", size=11))}
+    fig1.update_layout(**layout1)
     st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False, "responsive": True})
 
     # ── Forecast Chart ─────────────────────────
-    st.markdown("<div class='section-head'> 30-Day Forecast Prediction</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'>🔮 30-Day Forecast Prediction</div>", unsafe_allow_html=True)
 
     fig2      = go.Figure()
     hist_x    = dates[-60:]
@@ -669,7 +612,7 @@ if st.session_state.get('active_pred'):
     st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False, "responsive": True})
 
     # ── Forecast Table ─────────────────────────
-    st.markdown("<div class='section-head'> Predicted Prices — Next 30 Days</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'>📅 Predicted Prices — Next 30 Days</div>", unsafe_allow_html=True)
 
     pred_df = pd.DataFrame({
         "Date": future_dates.strftime("%Y-%m-%d"),
@@ -698,13 +641,13 @@ if st.session_state.get('active_pred'):
     )
 
     # ── Lumpsum & SIP Calculator ────────────────
-    st.markdown("<div class='section-head'> Long-Term Returns Calculator</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-head'>💰 Long-Term Returns Calculator</div>", unsafe_allow_html=True)
     st.markdown("Calculate potential long-term returns for this asset based on the 30-day forecasted trend.")
 
     calc_type = st.radio("Investment Mode", ["Lumpsum", "SIP (Monthly)"], horizontal=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    calc_c1, calc_c2 = st.columns(2)
+    calc_c1, calc_c2, calc_c3 = st.columns(3)
 
     with calc_c1:
         if calc_type == "Lumpsum":
@@ -713,21 +656,15 @@ if st.session_state.get('active_pred'):
             investment = st.number_input(f"Monthly Investment ({currency})", min_value=100.0, value=1000.0, step=500.0)
 
     with calc_c2:
-        duration_years = st.selectbox("Investment Duration (Years)", [1, 2, 3, 5, 10, 15, 20, 25, 30], index=3)
+        expected_return = 15.0 if trend >= 0 else -5.0
+        st.text_input(
+            "Expected Annual Return (%)", 
+            value=f"{expected_return}% (Based on Trend)", 
+            disabled=True
+        )
 
-    # Annualize the model's 30-day forecast using CAGR: (1 + r_30d)^(365/30) - 1
-    expected_return = round(((1 + trend / 100) ** (365 / 30) - 1) * 100, 2)
-    return_icon = "" if expected_return >= 0 else ""
-    if expected_return >= 0:
-        st.success(
-            f"{return_icon} **Model-Predicted Annual Return: {expected_return:+.2f}%** — "
-            f"Annualized from the 30-day forecast ({trend:+.2f}% in 30 days)"
-        )
-    else:
-        st.error(
-            f"{return_icon} **Model-Predicted Annual Return: {expected_return:+.2f}%** — "
-            f"Annualized from the 30-day forecast ({trend:+.2f}% in 30 days)"
-        )
+    with calc_c3:
+        duration_years = st.selectbox("Investment Duration (Years)", [1, 2, 3, 5, 10, 15, 20, 25, 30], index=3)
 
     # Mathematical Calculations
     if calc_type == "Lumpsum":
@@ -738,7 +675,7 @@ if st.session_state.get('active_pred'):
     else: # SIP Calculation
         total_invested = investment * 12 * duration_years
         
-        if expected_return == 0:  # Division by zero safety
+        if expected_return == 0:
             total_value = total_invested
             est_returns = 0.0
         else:
@@ -752,7 +689,6 @@ if st.session_state.get('active_pred'):
     res_c1, res_c2, res_c3 = st.columns(3)
     res_c1.metric("Total Invested", f"{currency} {total_invested:,.2f}")
     
-    # Show red/green depending on profit vs loss
     sign = "+" if est_returns >= 0 else ""
     res_c2.metric("Estimated Returns", f"{currency} {est_returns:,.2f}", f"{sign}{expected_return}% CAGR")
     res_c3.metric("Total Projected Value", f"{currency} {total_value:,.2f}")
@@ -761,21 +697,21 @@ if st.session_state.get('active_pred'):
     
     if est_returns > 0:
         st.success(
-            f"### PROFIT! \n"
+            f"### PROFIT! 🚀\n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years** "
             f"at an expected rate of **{expected_return}%**, your money is projected to grow to **{currency} {total_value:,.2f}**.\n\n"
             f"**Total Profit Earned:** {currency} {est_returns:,.2f}"
         )
     elif est_returns < 0:
         st.error(
-            f"### LOSS! \n"
+            f"### LOSS! ⚠️\n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years** "
             f"at an expected rate of **{expected_return}%**, your money is projected to shrink to **{currency} {total_value:,.2f}**.\n\n"
             f"**Total Loss Incurred:** {currency} {abs(est_returns):,.2f}"
         )
     else:
         st.info(
-            f"### BREAK EVEN \n"
+            f"### BREAK EVEN ⚖️\n"
             f"By making a **{calc_type}** investment of **{currency} {total_invested:,.2f}** over **{duration_years} years**, "
             f"your money will not grow or shrink.\n\n"
             f"**Final Value:** {currency} {total_value:,.2f}"
