@@ -126,4 +126,3 @@ Do not use this for real financial or investment decisions.
 ## 👨‍💻 Author
 
 Anurag Tiwari
-Stock Price Predictor — ML Project
