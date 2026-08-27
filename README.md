@@ -65,6 +65,7 @@ http://localhost:8501
 
 ## 📊 How to Use
 
+# live link --> https://stockpredictorproject-agknu2yunsswuspbbinttf.streamlit.app/
 1. Open the app in your browser
 2. Type a stock symbol in the input box
 3. Select how much historical data to use (1y / 2y / 3y / 5y)
