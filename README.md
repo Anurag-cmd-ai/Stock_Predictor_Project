@@ -92,19 +92,14 @@ http://localhost:8501
 
 ---
 
-## 🌐 Hosting (Free Options)
+## 🌐 Hosting 
 
-### Streamlit Community Cloud (Recommended)
+### Streamlit Community Cloud 
 1. Push code to GitHub
 2. Go to share.streamlit.io
 3. Connect your GitHub repo
 4. Click Deploy
 5. Get a live link like https://yourapp.streamlit.app
-
-### Other Options
-- Hugging Face Spaces — great for ML projects
-- Render — general web hosting
-- Railway — fast deployment
 
 ---
 
